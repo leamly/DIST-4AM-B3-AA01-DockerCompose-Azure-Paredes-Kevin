@@ -1,0 +1,100 @@
+
+using LibroA.Api.Data;
+using LibroA.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Text;
+
+namespace LibroA.Api
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            // Add services to the container.
+
+            builder.Services.AddControllers();
+
+            builder.Services.AddScoped<RabbitMQPublisher>();
+
+            // Configurar la cadena de conexión a la base de datos 
+            builder.Services.AddDbContext<LibrosDBContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("LibrosConnection")));
+
+            // Configuración JWT
+            var jwtKey = builder.Configuration["Jwt:Key"];
+            var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+            var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidIssuer = jwtIssuer,
+                        ValidAudience = jwtAudience,
+
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(jwtKey!)
+                        )
+                    };
+                });
+
+            builder.Services.AddAuthorization();
+
+
+
+            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+            // builder.Services.AddOpenApi();
+
+            builder.Services.AddEndpointsApiExplorer();
+            // builder.Services.AddSwaggerGen();
+
+            // configuracion de swagger con autenticacion y JWT
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Ingrese el token JWT"
+                });
+
+                options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("bearer", document)] = []
+                });
+            });
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                // app.MapOpenApi();
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseAuthorization();
+
+
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
+}

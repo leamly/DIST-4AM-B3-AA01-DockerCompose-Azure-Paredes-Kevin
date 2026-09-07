@@ -1,0 +1,204 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. INFRAESTRUCTURA (BASE DE DATOS Y COLAS)
+  # ==========================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-compose-oauth
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "TuPasswordSeguro123!" # Esta clave debe coincidir con la del init.sh
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "TuPasswordSeguro123!", "-C", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - distribuidos-network
+
+  db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: db-init-script
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./SqlScripts:/scripts
+    command: /bin/bash /scripts/init.sh
+    networks:
+      - distribuidos-network
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmqA-compose-oauth
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    healthcheck:
+      test: ["CMD","rabbitmq-diagnostics","-q","ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - distribuidos-network
+
+  # ==========================================
+  # 2. MICROSERVICIO DE AUTENTICACIÓN
+  # ==========================================
+  oauthjwt:
+    build:
+      context: ./OAuthJWT
+      dockerfile: Dockerfile
+    container_name: oauthjwt-api-compose
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      Jwt__Key: "ClaveSuperSecretaParaJWT123456789"
+      Jwt__Issuer: "MiApiGateway"
+      Jwt__Audience: "MisMicroservicios"
+    networks:
+      - distribuidos-network
+
+  # ==========================================
+  # 3. MICROSERVICIOS DE NEGOCIO
+  # ==========================================
+  libro:
+    build:
+      context: ./LibroA/LibroA.Api
+      dockerfile: Dockerfile
+    container_name: libroA-api-compose-oauth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # Conexión usando el usuario específico creado por el script SQL
+      ConnectionStrings__LibrosConnection: "Server=sqlserver,1433;Initial Catalog=LibroDB_A;User ID=usuario_libroA;Password=12345;Encrypt=False;TrustServerCertificate=True;"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: "5672"
+      RabbitMQ__UserName: admin
+      RabbitMQ__Password: admin123
+      RabbitMQ__QueueName: libro_creado
+      Jwt__Key: "ClaveSuperSecretaParaJWT123456789"
+      Jwt__Issuer: "LibroApi"
+      Jwt__Audience: "LibroApiUsers"
+      Jwt__ExpireMinutes: 60
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - distribuidos-network
+
+  inventario:
+    build:
+      context: ./InventarioA/InventarioA.Api
+      dockerfile: Dockerfile
+    container_name: inventarioA-api-compose-oauth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # Conexión usando el usuario específico creado por el script SQL
+      ConnectionStrings__InventarioConnection: "Server=sqlserver,1433;Initial Catalog=InventarioDB_A;User ID=usuario_inventarioA;Password=12345;Encrypt=False;TrustServerCertificate=True;"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: "5672"
+      RabbitMQ__UserName: admin
+      RabbitMQ__Password: admin123
+      RabbitMQ__QueueName: libro_creado
+      Jwt__Key: "ClaveSuperSecretaParaJWT123456789"
+      Jwt__Issuer: "LibroApi"
+      Jwt__Audience: "LibroApiUsers"
+      Jwt__ExpireMinutes: 60
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - distribuidos-network
+
+  categoria:
+    build:
+      context: ./CategoriaA/CategoriaA.Api
+      dockerfile: Dockerfile
+    container_name: categoriaA-api-compose-oauth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # Conexión usando el usuario específico creado por el script SQL
+      ConnectionStrings__CategoriasConnection: "Server=sqlserver,1433;Initial Catalog=CategoriaDB_A;User ID=usuario_categoriaA;Password=12345;Encrypt=False;TrustServerCertificate=True;"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: "5672"
+      RabbitMQ__UserName: admin
+      RabbitMQ__Password: admin123
+      RabbitMQ__QueueName: categoria_creado
+      Jwt__Key: "ClaveSuperSecretaParaJWT123456789"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - distribuidos-network
+
+  vehiculo:
+    build:
+      context: ./VehiculoA/VehiculoA.Api
+      dockerfile: Dockerfile
+    container_name: vehiculoA-api-compose-oauth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # Conexión usando el usuario específico creado por el script SQL
+      ConnectionStrings__VehiculosConnection: "Server=sqlserver,1433;Initial Catalog=VehiculoDB_A;User ID=usuario_vehiculoA;Password=12345;Encrypt=False;TrustServerCertificate=True;"
+      RabbitMQ__HostName: rabbitmq
+      RabbitMQ__Port: "5672"
+      RabbitMQ__UserName: admin
+      RabbitMQ__Password: admin123
+      RabbitMQ__QueueName: categoria_creado
+      Jwt__Key: "ClaveSuperSecretaParaJWT123456789"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - distribuidos-network
+
+  # ==========================================
+  # 4. API GATEWAY
+  # ==========================================
+  apigateway:
+    build:
+      context: ./ApiGetewayA
+      dockerfile: ApiGetewayA/Dockerfile
+    container_name: apigatewayA-api-compose-oauth
+    ports:
+      - "80:8080" # Expone el Gateway al puerto 80 para facilitar acceso en Azure
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      # Enrutamiento hacia las redes internas de Docker usando los nombres de los servicios
+      ReverseProxy__Clusters__authCluster__Destinations__authDestination__Address: "http://oauthjwt:8080/"
+      ReverseProxy__Clusters__librosCluster__Destinations__librosDestination__Address: "http://libro:8080/"
+      ReverseProxy__Clusters__inventariosCluster__Destinations__inventariosDestination__Address: "http://inventario:8080/"
+      ReverseProxy__Clusters__categoriasCluster__Destinations__categoriasDestination__Address: "http://categoria:8080/"
+      ReverseProxy__Clusters__vehiculosCluster__Destinations__vehiculosDestination__Address: "http://vehiculo:8080/"
+    depends_on:
+      - oauthjwt
+      - libro
+      - inventario
+      - categoria
+      - vehiculo
+    networks:
+      - distribuidos-network
+
+networks:
+  distribuidos-network:
+    driver: bridge

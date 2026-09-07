@@ -1,0 +1,37 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+@ApiGateway = https://localhost:7217
+# Token Usuario
+// @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoidXN1YXJpbyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlVzdWFyaW8iLCJleHAiOjE3ODgyNzYzMTgsImlzcyI6IkxpYnJvQXBpIiwiYXVkIjoiTGlicm9BcGlVc2VycyJ9.vUiSuy1Dwuhl-UsB3ksOew_0YLolF77wbk5cERLTSs4
+
+# Token Admin
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW4iLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJBZG1pbmlzdHJhZG9yIiwiZXhwIjoxNzg4Mjc2NDM4LCJpc3MiOiJMaWJyb0FwaSIsImF1ZCI6IkxpYnJvQXBpVXNlcnMifQ.N1eXKXAG2omK1pq245ZvLLQrv5lLkMyS4bUn3hHf5F4
+
+### Consultar libros por Gateway
+GET {{ApiGateway}}/api/Libros
+Accept: application/json
+Authorization: Bearer {{token}}
+
+###
+
+### Crear libro por Gateway
+POST {{ApiGateway}}/api/Libros
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "titulo": "Microservicios con RabbitMQ con autorizacion",
+  "autor": "Leandro Amores",
+  "isbn": "9781234567770",
+  "precio": 35.50,
+  "estado": true
+}
+
+
+### login 
+POST {{ApiGateway}}/api/Auth/login
+Content-Type: application/json
+{
+  "Usuario": "admin",
+  "password": "1234"
+}
