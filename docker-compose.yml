@@ -54,7 +54,7 @@ services:
   # ==========================================
   oauthjwt:
     build:
-      context: ./OAuthJWT
+      context: ./OAuthJWT/OAuthJWT.Api
       dockerfile: Dockerfile
     container_name: oauthjwt-api-compose
     environment:
