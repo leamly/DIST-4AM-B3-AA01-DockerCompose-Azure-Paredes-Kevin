@@ -57,6 +57,8 @@ services:
       context: ./OAuthJWT/OAuthJWT.Api
       dockerfile: Dockerfile
     container_name: oauthjwt-api-compose
+    ports:
+      - "8085:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
@@ -74,6 +76,8 @@ services:
       context: ./LibroA/LibroA.Api
       dockerfile: Dockerfile
     container_name: libroA-api-compose-oauth
+    ports:
+      - "8081:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
@@ -101,6 +105,8 @@ services:
       context: ./InventarioA/InventarioA.Api
       dockerfile: Dockerfile
     container_name: inventarioA-api-compose-oauth
+    ports:
+      - "8082:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
@@ -128,6 +134,8 @@ services:
       context: ./CategoriaA/CategoriaA.Api
       dockerfile: Dockerfile
     container_name: categoriaA-api-compose-oauth
+    ports:
+      - "8083:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
@@ -152,6 +160,8 @@ services:
       context: ./VehiculoA/VehiculoA.Api
       dockerfile: Dockerfile
     container_name: vehiculoA-api-compose-oauth
+    ports:
+      - "8084:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
